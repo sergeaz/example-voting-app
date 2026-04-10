@@ -74,8 +74,8 @@ app.get('/', function (req, res) {
   fs.readFile(indexPath, 'utf8', function(err, data) {
     if (err) return res.status(500).send('Error loading page');
 
-    const optionA = process.env.OPTION_A || 'Cats';
-    const optionB = process.env.OPTION_B || 'Dogs';
+    const optionA = process.env.OPTION_A;
+    const optionB = process.env.OPTION_B;
 
     const out = data
       .replace(/%OPTION_A%/g, optionA)
