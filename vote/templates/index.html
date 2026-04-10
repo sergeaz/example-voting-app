@@ -29,6 +29,34 @@
     <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
 
+    <!-- place this above the vote buttons or wherever appropriate -->
+    <form id="set-options" method="post" action="/options">
+      <input id="optA" name="option_a" placeholder="Option A" value="{{option_a}}" />
+      <input id="optB" name="option_b" placeholder="Option B" value="{{option_b}}" />
+      <button id="saveOptions" type="button">Set options</button>
+    </form>
+
+    <script>
+      $('#saveOptions').on('click', function(){
+        const a = $('#optA').val();
+        const b = $('#optB').val();
+        $.ajax({
+          url: '/options',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ option_a: a, option_b: b }),
+          success: function(resp) {
+            // update labels on the page instantly
+            $('.a').find('.label').text(resp.option_a);
+            $('.b').find('.label').text(resp.option_b);
+            $('#a').text(resp.option_a);
+            $('#b').text(resp.option_b);
+          },
+          error: function() { alert('Failed to set options'); }
+        });
+      });
+    </script>
+
     {% if vote %}
     <script>
       var vote = "{{vote}}";

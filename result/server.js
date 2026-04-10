@@ -74,12 +74,19 @@ app.get('/', function (req, res) {
   fs.readFile(indexPath, 'utf8', function(err, data) {
     if (err) return res.status(500).send('Error loading page');
 
-    const optionA = process.env.OPTION_A;
-    const optionB = process.env.OPTION_B;
-
+    const optionA = process.env.OPTION_A ?? 'Fake A';
+    const optionB = process.env.OPTION_B ?? 'Fake B';
+    // simple HTML-escape to avoid accidental injection
+    const escapeHtml = (str) =>
+      String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     const out = data
-      .replace(/%OPTION_A%/g, optionA)
-      .replace(/%OPTION_B%/g, optionB);
+      .replace(/%OPTION_A%/g, escapeHtml(optionA))
+      .replace(/%OPTION_B%/g, escapeHtml(optionB));
 
     res.send(out);
   });
@@ -89,3 +96,24 @@ server.listen(port, function () {
   var port = server.address().port;
   console.log('App running on port ' + port);
 });
+
+// add node-fetch or use built-in fetch if available (Node 18+)
+const fetch = global.fetch || require('node-fetch');
+
+let remoteOptionA = process.env.OPTION_A || 'Cats';
+let remoteOptionB = process.env.OPTION_B || 'Dogs';
+
+async function loadOptionsFromVote() {
+  try {
+    const res = await fetch('http://vote/options', { timeout: 2000 });
+    if (!res.ok) throw new Error('bad');
+    const json = await res.json();
+    remoteOptionA = json.option_a || remoteOptionA;
+    remoteOptionB = json.option_b || remoteOptionB;
+  } catch (e) {
+    // keep existing values; retry later
+  }
+}
+// call at startup and every 5s
+loadOptionsFromVote();
+setInterval(loadOptionsFromVote, 5000);
