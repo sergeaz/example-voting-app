@@ -22,7 +22,7 @@ services:
       - backend
 
   vote:
-    image: dockersamples/examplevotingapp_vote
+    image: example-voting-app-vote:latest
     ports:
       - 8080:80
     networks:
