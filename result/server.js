@@ -2,6 +2,8 @@ var express = require('express'),
     async = require('async'),
     { Pool } = require('pg'),
     cookieParser = require('cookie-parser'),
+    fs = require('fs'),
+    path = require('path'),
     app = express(),
     server = require('http').Server(app),
     io = require('socket.io')(server);
@@ -68,7 +70,19 @@ app.use(express.urlencoded());
 app.use(express.static(__dirname + '/views'));
 
 app.get('/', function (req, res) {
-  res.sendFile(path.resolve(__dirname + '/views/index.html'));
+  const indexPath = path.join(__dirname, 'views', 'index.html');
+  fs.readFile(indexPath, 'utf8', function(err, data) {
+    if (err) return res.status(500).send('Error loading page');
+
+    const optionA = process.env.OPTION_A || 'Cats';
+    const optionB = process.env.OPTION_B || 'Dogs';
+
+    const out = data
+      .replace(/%OPTION_A%/g, optionA)
+      .replace(/%OPTION_B%/g, optionB);
+
+    res.send(out);
+  });
 });
 
 server.listen(port, function () {
