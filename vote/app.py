@@ -67,8 +67,8 @@ def set_options():
         # prefer redirecting back with a simple error param (template can show it)
         return redirect(url_for('hello'))
     resp = make_response(redirect(url_for('hello')))
-    resp.set_cookie('option_a', a)
-    resp.set_cookie('option_b', b)
+    resp.set_cookie('option_a', a, httponly=False)
+    resp.set_cookie('option_b', b, httponly=False)
     return resp
 
 @app.route("/reset", methods=['POST','GET'])

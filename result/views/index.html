@@ -2,7 +2,7 @@
 <html ng-app="catsvsdogs">
   <head>
     <meta charset="utf-8">
-    <title>Cats vs Dogs -- Result</title>
+    <title>Result</title>
     <base href="/index.html">
     <meta name = "viewport" content = "width=device-width, initial-scale = 1.0">
     <meta name="keywords" content="docker-compose, docker, stack">
@@ -20,12 +20,12 @@
       <div id="content-container-center">
         <div id="choice">
           <div class="choice cats">
-            <div class="label">Cats</div>
+            <div class="label">{{optionA}}</div>
             <div class="stat">{{aPercent | number:1}}%</div>
           </div>
           <div class="divider"></div>
           <div class="choice dogs">
-            <div class="label">Dogs</div>
+            <div class="label">{{optionB}}</div>
             <div class="stat">{{bPercent | number:1}}%</div>
           </div>
         </div>
@@ -42,3 +42,21 @@
     <script src="app.js"></script>
   </body>
 </html>
+
+function getCookie(name) {
+  var m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'));
+  return m ? decodeURIComponent(m[2]) : null;
+}
+
+function updateDocumentTitle(a, b) {
+  document.title = (a || 'Cats') + ' vs ' + (b || 'Dogs') + ' -- Result';
+}
+
+app.controller('statsCtrl', function($scope){
+  $scope.optionA = getCookie('option_a') || 'Cats';
+  $scope.optionB = getCookie('option_b') || 'Dogs';
+  updateDocumentTitle($scope.optionA, $scope.optionB);
+
+  // later, when you update $scope.optionA/optionB (or after socket messages)
+  // call updateDocumentTitle($scope.optionA, $scope.optionB);
+});

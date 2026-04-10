@@ -4,9 +4,22 @@ var socket = io.connect();
 var bg1 = document.getElementById('background-stats-1');
 var bg2 = document.getElementById('background-stats-2');
 
+function getCookie(name) {
+  var m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'));
+  return m ? decodeURIComponent(m[2]) : null;
+}
+
+function updateDocumentTitle(a, b) {
+  document.title = (a || 'Cats') + ' vs ' + (b || 'Dogs') + ' -- Result';
+}
+
 app.controller('statsCtrl', function($scope){
   $scope.aPercent = 50;
   $scope.bPercent = 50;
+
+  $scope.optionA = getCookie('option_a') || 'Cats';
+  $scope.optionB = getCookie('option_b') || 'Dogs';
+  updateDocumentTitle($scope.optionA, $scope.optionB);
 
   var updateScores = function(){
     socket.on('scores', function (json) {
