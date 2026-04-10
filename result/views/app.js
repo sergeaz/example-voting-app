@@ -23,6 +23,7 @@ app.controller('statsCtrl', function($scope){
          $scope.aPercent = percentages.a;
          $scope.bPercent = percentages.b;
          $scope.total = a + b;
+         $scope.hostname = data.hostname || $scope.hostname || window.location.hostname;
        });
     });
   };
@@ -31,7 +32,10 @@ app.controller('statsCtrl', function($scope){
     document.body.style.opacity=1;
     updateScores();
   };
-  socket.on('message',function(data){
+  socket.on('message', function(data){
+    $scope.$apply(function(){
+      $scope.hostname = data.hostname || window.location.hostname;
+    });
     init();
   });
 });

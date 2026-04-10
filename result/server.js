@@ -1,3 +1,4 @@
+var os = require('os');
 var express = require('express'),
     async = require('async'),
     { Pool } = require('pg'),
@@ -10,7 +11,7 @@ var port = process.env.PORT || 4000;
 
 io.on('connection', function (socket) {
 
-  socket.emit('message', { text : 'Welcome!' });
+  socket.emit('message', { text: 'Welcome!', hostname: os.hostname() });
 
   socket.on('subscribe', function (data) {
     socket.join(data.channel);
@@ -46,6 +47,7 @@ function getVotes(client) {
       console.error("Error performing query: " + err);
     } else {
       var votes = collectVotesFromResult(result);
+      votes.hostname = os.hostname();
       io.sockets.emit("scores", JSON.stringify(votes));
     }
 
