@@ -67,7 +67,7 @@ function collectVotesFromResult(result) {
 
 app.use(cookieParser());
 app.use(express.urlencoded());
-app.use(express.static(__dirname + '/views'));
+app.use(express.static(__dirname + '/views', { index: false }));
 
 app.get('/', function (req, res) {
   const indexPath = path.join(__dirname, 'views', 'index.html');
