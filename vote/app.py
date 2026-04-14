@@ -14,7 +14,10 @@ app = Flask(__name__)
 
 gunicorn_error_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers.extend(gunicorn_error_logger.handlers)
-app.logger.setLevel(logging.INFO)
+# Allow runtime log level control via config (default to INFO)
+log_level = os.getenv('LOG_LEVEL', 'info').upper()
+app_logger_level = getattr(logging, log_level, logging.INFO)
+app.logger.setLevel(app_logger_level)
 
 def get_redis():
     if not hasattr(g, 'redis'):
@@ -79,4 +82,7 @@ def reset():
     return resp
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=80, debug=True, threaded=True)
+    # Use infrastructure-provided port when available (keeps docker-compose fallback)
+    port = int(os.getenv('SERVICE_PORT', '80'))
+    debug_flag = os.getenv('FLASK_DEBUG', 'True').lower() in ('1', 'true', 'yes')
+    app.run(host='0.0.0.0', port=port, debug=debug_flag, threaded=True)

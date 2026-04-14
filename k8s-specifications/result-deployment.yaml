@@ -5,7 +5,7 @@ metadata:
     app: result
   name: result
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: result
@@ -18,6 +18,9 @@ spec:
       - image: result:1.2
         name: result
         imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: result-config
         ports:
         - containerPort: 80
           name: result

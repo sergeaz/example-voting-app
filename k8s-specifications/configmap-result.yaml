@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: result-config
+data:
+  # connection string used by the result service; apps can override via env
+  DATABASE_URL: "postgres://postgres:postgres@db/postgres"
+  # Application HTTP port (separate from DB port)
+  APP_PORT: "4000"
+  # Database connection host/port (separate from app port)
+  DB_HOST: "db"
+  DB_PORT: "5432"

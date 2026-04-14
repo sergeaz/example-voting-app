@@ -18,6 +18,9 @@ spec:
       - image: vote:1.2
         name: vote
         imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: vote-config
         ports:
         - containerPort: 80
           name: vote

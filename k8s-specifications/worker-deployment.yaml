@@ -17,3 +17,6 @@ spec:
       containers:
       - image: dockersamples/examplevotingapp_worker
         name: worker
+        envFrom:
+        - configMapRef:
+            name: worker-config

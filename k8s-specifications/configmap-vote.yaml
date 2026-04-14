@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vote-config
+data:
+  # Infrastructure-level settings only. Do NOT include user-provided
+  # option values (those come from the UI / cookies at runtime).
+  APP_NAME: "vote"
+  SERVICE_PORT: "80"
+  LOG_LEVEL: "info"

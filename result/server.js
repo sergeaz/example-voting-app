@@ -7,7 +7,8 @@ var express = require('express'),
     server = require('http').Server(app),
     io = require('socket.io')(server);
 
-var port = process.env.PORT || 4000;
+// Prefer explicit app port; fall back to generic PORT and then to 4000
+var port = process.env.APP_PORT || process.env.PORT || 4000;
 
 io.on('connection', function (socket) {
 
@@ -18,8 +19,16 @@ io.on('connection', function (socket) {
   });
 });
 
+// Build connection string from DATABASE_URL or from individual DB_* vars
 var pool = new Pool({
-  connectionString: 'postgres://postgres:postgres@db/postgres'
+  connectionString: (function(){
+    if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+    var user = process.env.POSTGRES_USER || 'postgres';
+    var pass = process.env.POSTGRES_PASSWORD || 'postgres';
+    var host = process.env.DB_HOST || 'db';
+    var dbport = process.env.DB_PORT || '5432';
+    return 'postgres://' + user + ':' + pass + '@' + host + ':' + dbport + '/postgres';
+  })()
 });
 
 async.retry(

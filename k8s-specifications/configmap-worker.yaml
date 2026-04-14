@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker-config
+data:
+  # connection string used by the worker; code currently falls back to hardcoded string
+  DB_CONN: "Server=db;Username=postgres;Password=postgres;"
+  REDIS_HOST: "redis"
