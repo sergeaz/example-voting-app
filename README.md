@@ -46,6 +46,14 @@ To remove them, run:
 kubectl delete -f k8s-specifications/
 ```
 
+The branch `resultrefresh` specifies local custom images that carry application changes related to being able to give custom names for voting. The changes were made in repo at /result and /vote directories. Then, build like:
+```shell
+nerdctl build --namespace=k8s.io -t vote:1.2 ./vote
+nerdctl build --namespace=k8s.io -t result:1.2 ./result
+```
+Note: classic `docker build` is not used here because images build from that arent made available in the Kubernetes clusters for several reasons. 
+This Rancher doc explains building Docker and Nerdctl images: https://docs.rancherdesktop.io/tutorials/working-with-images/ 
+
 ## Architecture
 
 ![Architecture diagram](architecture.excalidraw.png)
