@@ -16,6 +16,7 @@ function updateDocumentTitle(a, b) {
 app.controller('statsCtrl', function($scope){
   $scope.aPercent = 50;
   $scope.bPercent = 50;
+  $scope.history = [];
 
   $scope.optionA = getCookie('option_a') || 'Cats';
   $scope.optionB = getCookie('option_b') || 'Dogs';
@@ -38,6 +39,25 @@ app.controller('statsCtrl', function($scope){
          $scope.total = a + b;
          $scope.hostname = data.hostname || $scope.hostname || window.location.hostname;
        });
+    });
+
+    // receive initial history
+    socket.on('history', function(json){
+      var items = [];
+      try { items = JSON.parse(json || '[]'); } catch(e) { items = []; }
+      $scope.$apply(function(){
+        $scope.history = items;
+      });
+    });
+
+    // receive single-vote events and prepend to history
+    socket.on('vote', function(json){
+      var ev = null;
+      try { ev = JSON.parse(json); } catch(e) { return; }
+      $scope.$apply(function(){
+        $scope.history.unshift(ev);
+        if ($scope.history.length > 200) $scope.history.length = 200;
+      });
     });
   };
 

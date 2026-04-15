@@ -37,6 +37,24 @@
       <span ng-if="total == 1">{{total}} vote</span>
       <span ng-if="total >= 2">{{total}} votes</span>
     </div>
+    <div id="history-container" style="max-height:220px; overflow:auto; margin:12px;">
+      <table id="history-table" style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Date &amp; Time</th>
+            <th style="text-align:right; padding:6px; border-bottom:1px solid #ccc;">Option A %</th>
+            <th style="text-align:right; padding:6px; border-bottom:1px solid #ccc;">Option B %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="h in history">
+            <td style="padding:6px; border-bottom:1px solid #eee;">{{h.ts}}</td>
+            <td style="padding:6px; border-bottom:1px solid #eee; text-align:right;">{{h.aPercent}}%</td>
+            <td style="padding:6px; border-bottom:1px solid #eee; text-align:right;">{{h.bPercent}}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <script src="socket.io.js"></script>
     <script src="angular.min.js"></script>
     <script src="app.js"></script>

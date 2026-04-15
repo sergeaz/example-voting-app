@@ -99,6 +99,18 @@ namespace Worker
                                     )";
             command.ExecuteNonQuery();
 
+            // also keep an append-only events table to preserve vote history with timestamps
+            var ev = connection.CreateCommand();
+            ev.CommandText = @"CREATE TABLE IF NOT EXISTS vote_events (
+                                    id SERIAL PRIMARY KEY,
+                                    voter_id VARCHAR(255),
+                                    vote VARCHAR(255) NOT NULL,
+                                    ts TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                                )";
+            ev.ExecuteNonQuery();
+            ev.Dispose();
+            command.Dispose();
+
             return connection;
         }
 
@@ -139,11 +151,25 @@ namespace Worker
                 command.Parameters.AddWithValue("@id", voterId);
                 command.Parameters.AddWithValue("@vote", vote);
                 command.ExecuteNonQuery();
+                // record append-only event
+                var evCmd = connection.CreateCommand();
+                evCmd.CommandText = "INSERT INTO vote_events (voter_id, vote) VALUES (@id, @vote)";
+                evCmd.Parameters.AddWithValue("@id", voterId);
+                evCmd.Parameters.AddWithValue("@vote", vote);
+                evCmd.ExecuteNonQuery();
+                evCmd.Dispose();
             }
             catch (DbException)
             {
                 command.CommandText = "UPDATE votes SET vote = @vote WHERE id = @id";
                 command.ExecuteNonQuery();
+                // record append-only event for changed vote
+                var evCmd2 = connection.CreateCommand();
+                evCmd2.CommandText = "INSERT INTO vote_events (voter_id, vote) VALUES (@id, @vote)";
+                evCmd2.Parameters.AddWithValue("@id", voterId);
+                evCmd2.Parameters.AddWithValue("@vote", vote);
+                evCmd2.ExecuteNonQuery();
+                evCmd2.Dispose();
             }
             finally
             {

@@ -19,6 +19,18 @@ io.on('connection', function (socket) {
   });
 });
 
+// Keep a short in-memory history of recent vote events and last seen totals
+var voteHistory = [];
+var lastTotals = {a: 0, b: 0};
+var lastEmittedId = 0; // last emitted event id from vote_events
+
+// When a client connects, send recent history
+io.on('connection', function (socket) {
+  if (voteHistory.length) {
+    socket.emit('history', JSON.stringify(voteHistory));
+  }
+});
+
 // Build connection string from DATABASE_URL or from individual DB_* vars
 var pool = new Pool({
   connectionString: (function(){
@@ -46,9 +58,57 @@ async.retry(
       return console.error("Giving up");
     }
     console.log("Connected to db");
-    getVotes(client);
+    // load persistent history from vote_events and then start polling
+    loadHistoryFromDb(client, function() {
+      getVotes(client);
+    });
   }
 );
+
+function loadHistoryFromDb(client, cb) {
+  // replay events in chronological order to compute running percentages
+  client.query('SELECT id, voter_id, vote, ts FROM vote_events ORDER BY id ASC', [], function(err, result) {
+    if (err) {
+      console.error('Error loading history: ' + err);
+      return cb && cb();
+    }
+
+    var voterMap = {};
+    var aCount = 0, bCount = 0;
+    var events = [];
+
+    result.rows.forEach(function(row) {
+      var vid = row.voter_id || ('v' + row.id);
+      var v = row.vote;
+      var prev = voterMap[vid];
+      if (prev === v) {
+        // no change
+      } else {
+        if (prev === 'a') aCount--; else if (prev === 'b') bCount--;
+        if (v === 'a') aCount++; else if (v === 'b') bCount++;
+        voterMap[vid] = v;
+      }
+
+      var total = aCount + bCount;
+      var aPct = 50, bPct = 50;
+      if (total > 0) {
+        aPct = Math.round(aCount / total * 100);
+        bPct = 100 - aPct;
+      }
+
+      events.push({id: row.id, ts: (row.ts && row.ts.toISOString()) || new Date().toISOString(), aPercent: aPct, bPercent: bPct});
+    });
+
+    // keep only recent 200
+    if (events.length > 200) events = events.slice(events.length - 200);
+    voteHistory = events.reverse(); // most recent first
+    if (result.rows.length) {
+      lastEmittedId = result.rows[result.rows.length - 1].id || lastEmittedId;
+    }
+
+    cb && cb();
+  });
+}
 
 function getVotes(client) {
   client.query('SELECT vote, COUNT(id) AS count FROM votes GROUP BY vote', [], function(err, result) {
@@ -58,6 +118,63 @@ function getVotes(client) {
       var votes = collectVotesFromResult(result);
       votes.hostname = os.hostname();
       io.sockets.emit("scores", JSON.stringify(votes));
+
+      // detect new votes since lastTotals and emit per-vote events
+      var deltaA = (votes.a || 0) - (lastTotals.a || 0);
+      var deltaB = (votes.b || 0) - (lastTotals.b || 0);
+      var total = (votes.a || 0) + (votes.b || 0);
+
+      if (deltaA > 0 || deltaB > 0) {
+        // fetch any new events from vote_events since lastEmittedId and emit them in order
+        client.query('SELECT id, voter_id, vote, ts FROM vote_events WHERE id > $1 ORDER BY id ASC', [lastEmittedId], function(err2, res2) {
+          if (err2) {
+            console.error('Error fetching new events: ' + err2);
+          } else {
+            var voterMap = {};
+            // rebuild voterMap from current vote table to have correct starting counts
+            // this is a light-weight approach: read current votes to seed voterMap
+            client.query('SELECT id, vote FROM votes', [], function(err3, res3) {
+              if (!err3) {
+                var aCount = 0, bCount = 0;
+                res3.rows.forEach(function(r){
+                  voterMap[r.id] = r.vote;
+                  if (r.vote === 'a') aCount++; else if (r.vote === 'b') bCount++;
+                });
+
+                // now apply new events in order and emit running percentages
+                res2.rows.forEach(function(row) {
+                  var vid = row.voter_id || ('v' + row.id);
+                  var v = row.vote;
+                  var prev = voterMap[vid];
+                  if (prev === v) {
+                    // nothing
+                  } else {
+                    if (prev === 'a') aCount--; else if (prev === 'b') bCount--;
+                    if (v === 'a') aCount++; else if (v === 'b') bCount++;
+                    voterMap[vid] = v;
+                  }
+
+                  var totalNow = aCount + bCount;
+                  var aPct = 50, bPct = 50;
+                  if (totalNow > 0) {
+                    aPct = Math.round(aCount / totalNow * 100);
+                    bPct = 100 - aPct;
+                  }
+
+                  var ev = {id: row.id, ts: (row.ts && row.ts.toISOString()) || new Date().toISOString(), aPercent: aPct, bPercent: bPct};
+                  voteHistory.unshift(ev);
+                  io.sockets.emit('vote', JSON.stringify(ev));
+                  lastEmittedId = row.id || lastEmittedId;
+                });
+
+                if (voteHistory.length > 200) voteHistory.length = 200;
+              }
+            });
+          }
+        });
+      }
+
+      lastTotals = {a: votes.a || 0, b: votes.b || 0};
     }
 
     setTimeout(function() {getVotes(client) }, 1000);
